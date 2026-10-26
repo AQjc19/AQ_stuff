@@ -1,0 +1,742 @@
+<!doctype html><!--local-->
+<html lang="zh-CN"><!--local-->
+<head><!--local-->
+<meta charset="utf-8"><!--local-->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><!--local-->
+<title>练后吃啥</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="给爱健身、不太会做饭的学生：按冰箱里现有的食材推荐高蛋白快手菜，自动预测什么快吃完了。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+QingKe+HuangYou&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one phone-width column, a "today" plate at the top, bottom tab bar like a real app */
+:root {
+  --bg: #eef1ec;
+  --surface: #ffffff;
+  --sunk: #e3e8e1;
+  --ink: #17211c;
+  --muted: #5b6961;
+  --line: #d5dcd3;
+  --accent: #1d6a4e;
+  --accent-ink: #ffffff;
+  --yolk: #e3a21f;
+  --yolk-soft: #fbefd2;
+  --warn: #c4513a;
+  --warn-soft: #f7e0da;
+  --ok-soft: #dcefe5;
+  --display: "ZCOOL QingKe HuangYou", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1512; --surface: #18201c; --sunk: #222c27; --ink: #e6ece7; --muted: #98a69e;
+    --line: #2c3731; --accent: #52bd8f; --accent-ink: #0b1a13; --yolk: #f0b94a; --yolk-soft: #3a2f17;
+    --warn: #e7765e; --warn-soft: #3d221c; --ok-soft: #173327; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1512; --surface: #18201c; --sunk: #222c27; --ink: #e6ece7; --muted: #98a69e;
+  --line: #2c3731; --accent: #52bd8f; --accent-ink: #0b1a13; --yolk: #f0b94a; --yolk-soft: #3a2f17;
+  --warn: #e7765e; --warn-soft: #3d221c; --ok-soft: #173327; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.wrap {
+  max-width: 560px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px calc(96px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 16px;
+}
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 8px; }
+.logo { white-space: nowrap; flex: none; font-family: var(--display); font-size: 30px; line-height: 1; letter-spacing: .02em; display: flex; align-items: baseline; gap: 8px; }
+.logo b { color: var(--accent); font-weight: 400; }
+@media (max-width: 520px) { .logo small { display: none; } }
+@media (max-width: 360px) { .datechip { display: none; } }
+.logo small { font-family: var(--body); font-size: 12px; color: var(--muted); letter-spacing: 0; }
+.datechip { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+.banner { background: var(--yolk-soft); border: 1px solid color-mix(in srgb, var(--yolk) 45%, transparent); border-radius: var(--r); padding: 10px 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13.5px; }
+.banner p { margin: 0; flex: 1 1 220px; min-width: 0; }
+
+h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 4px 0 0; line-height: 1.2; text-wrap: balance; }
+h3 { font-size: 15px; margin: 0; font-weight: 700; }
+.sub { color: var(--muted); font-size: 13px; margin: 0; }
+.label { font-size: 11.5px; letter-spacing: .08em; color: var(--muted); font-weight: 500; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.between { justify-content: space-between; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-size: 13.5px; font-weight: 500; white-space: nowrap; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.small { padding: 4px 10px; font-size: 12.5px; }
+.btn.ghost { background: transparent; }
+.btn.danger { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, var(--line)); }
+.btn[disabled] { opacity: .45; cursor: default; }
+
+.chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 500; background: var(--sunk); color: var(--muted); white-space: nowrap; }
+.chip.ok { background: var(--ok-soft); color: var(--accent); }
+.chip.low { background: var(--yolk-soft); color: color-mix(in srgb, var(--yolk) 70%, var(--ink)); }
+.chip.out { background: var(--warn-soft); color: var(--warn); }
+.chip.p { background: var(--ok-soft); color: var(--accent); font-family: var(--mono); }
+
+.seg { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.seg button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 13px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* Today: the plate */
+.plate { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: center; }
+.guide { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; }
+.guide b { color: var(--accent); }
+@media (max-width: 380px) { .plate { grid-template-columns: 1fr; justify-items: center; } }
+.ring { position: relative; width: 150px; height: 150px; }
+.ring svg { width: 150px; height: 150px; transform: rotate(-90deg); }
+.ring .c { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.ring .big { font-family: var(--display); font-size: 40px; line-height: 1; }
+.ring .of { font-size: 12px; color: var(--muted); }
+.bars { display: flex; flex-direction: column; gap: 10px; min-width: 0; width: 100%; }
+.bar { display: flex; flex-direction: column; gap: 4px; }
+.bar .t { display: flex; justify-content: space-between; font-size: 12.5px; }
+.bar .t span:last-child { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.track { height: 8px; background: var(--sunk); border-radius: 99px; overflow: hidden; }
+.fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width .4s ease; }
+.fill.y { background: var(--yolk); }
+.fill.m { background: var(--muted); }
+.fill.w { background: var(--warn); }
+
+.train { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.switch input { width: 18px; height: 18px; accent-color: var(--accent); }
+.timing { font-size: 13px; padding: 8px 10px; border-radius: 10px; background: var(--sunk); }
+.timing.pre { background: var(--yolk-soft); }
+.timing.post { background: var(--ok-soft); }
+
+.log { display: flex; flex-direction: column; }
+.log .it { display: grid; grid-template-columns: 44px 1fr auto auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.log .it:first-child { border-top: 0; }
+.log .tm { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.x { border: 0; background: transparent; color: var(--muted); font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 6px; }
+.x:hover { color: var(--warn); }
+
+/* Recipe cards */
+.rlist { display: flex; flex-direction: column; gap: 10px; }
+.rc { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; width: 100%; }
+.rc:hover { border-color: var(--accent); }
+.rc .nm { font-weight: 700; font-size: 15.5px; min-width: 0; }
+.rc .pp { grid-row: span 2; text-align: right; align-self: center; }
+.rc .pp b { display: block; font-family: var(--display); font-weight: 400; font-size: 30px; line-height: 1; color: var(--accent); }
+.rc .pp span { font-size: 11px; color: var(--muted); }
+.rc .meta { display: flex; gap: 6px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); min-width: 0; }
+.rc .miss { grid-column: 1 / -1; font-size: 12.5px; }
+.rc.dim { opacity: .72; }
+.lv { letter-spacing: 1px; color: var(--yolk); }
+
+/* Pantry */
+.cat { display: flex; flex-direction: column; }
+.pi { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 10px 0; border-top: 1px solid var(--line); align-items: center; }
+.pi:first-of-type { border-top: 0; }
+.pi .n { font-weight: 500; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 0; }
+.pi .est { grid-column: 1 / 2; font-size: 12px; color: var(--muted); }
+.pi .acts { grid-row: 1 / span 2; grid-column: 2; display: flex; gap: 6px; }
+.pi .track { grid-column: 1 / 2; height: 5px; }
+.addpick { display: flex; flex-wrap: wrap; gap: 6px; }
+.addpick button { border: 1px dashed var(--line); background: transparent; border-radius: 999px; padding: 4px 10px; font-size: 13px; }
+.addpick button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Shopping */
+.si { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+.si:first-child { border-top: 0; }
+.si input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+.si label { flex: 1; min-width: 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.si.done label > span:first-child { text-decoration: line-through; color: var(--muted); }
+
+/* Form */
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form .full { grid-column: 1 / -1; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field > label, .field > .label { font-size: 12.5px; color: var(--muted); }
+.field input[type=number], .field input[type=time], .field select { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 10px; width: 100%; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px; }
+.checks label { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; font-size: 13px; background: var(--surface); }
+.checks input { accent-color: var(--accent); }
+.calc { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+@media (max-width: 420px) { .calc { grid-template-columns: repeat(2, 1fr); } }
+.calc div { background: var(--sunk); border-radius: 10px; padding: 8px 10px; }
+.calc b { display: block; font-family: var(--display); font-weight: 400; font-size: 24px; line-height: 1.1; }
+.calc span { font-size: 11.5px; color: var(--muted); }
+.why { font-size: 12.5px; color: var(--muted); margin: 0; }
+
+/* Prep */
+.prepdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.prepdays div { background: var(--sunk); border-radius: 8px; padding: 6px 2px; text-align: center; font-size: 11px; color: var(--muted); min-width: 0; }
+.prepdays div b { display: block; font-size: 12px; color: var(--ink); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shared { background: var(--ok-soft); color: var(--accent); }
+
+/* Bottom nav */
+nav.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
+  padding-left: max(8px, env(safe-area-inset-left, 0px)); padding-right: max(8px, env(safe-area-inset-right, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+nav.tabs .in { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(6, 1fr); }
+nav.tabs a { text-decoration: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 9px; font-size: 11.5px; position: relative; }
+nav.tabs a svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+nav.tabs a[aria-current="page"] { color: var(--accent); font-weight: 700; }
+nav.tabs .dot { position: absolute; top: 5px; left: calc(50% + 8px); min-width: 16px; height: 16px; border-radius: 8px; background: var(--warn); color: #fff; font-size: 10px; display: grid; place-items: center; padding: 0 4px; font-family: var(--mono); }
+
+/* Sheet */
+.scrim { position: fixed; inset: 0; background: rgb(0 0 0 / .38); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+.sheet { background: var(--bg); width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; border-radius: 20px 20px 0 0; padding: 18px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 14px; }
+.macros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.macros div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px; text-align: center; }
+.macros b { display: block; font-family: var(--display); font-weight: 400; font-size: 24px; line-height: 1.1; }
+.macros span { font-size: 11px; color: var(--muted); }
+ol.steps { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }
+.ings { display: flex; flex-wrap: wrap; gap: 6px; }
+.toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 999px; font-size: 13.5px; z-index: 30; max-width: calc(100% - 32px); }
+.empty { text-align: center; color: var(--muted); padding: 18px 8px; font-size: 14px; }
+.note { font-size: 12.5px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head><!--local-->
+<body><!--local-->
+<div class="wrap" id="app">
+  <header class="top">
+    <div class="logo">练后<b>吃啥</b><small>健身学生的厨房助手</small></div>
+    <div class="row" style="flex-wrap:nowrap"><span class="datechip" id="datechip"></span><button class="btn small" data-act="guide">使用指南</button></div>
+  </header>
+  <div id="banner"></div>
+  <main id="view" class="stack"></main>
+</div>
+<nav class="tabs" aria-label="主导航"><div class="in" id="tabs"></div></nav>
+<div id="sheet"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+// ---------- data ----------
+const ING = {
+  egg:{n:'鸡蛋',c:'蛋白',d:7}, chicken:{n:'生鸡胸肉',c:'蛋白',d:5}, readychicken:{n:'即食鸡胸',c:'蛋白',d:7},
+  beef:{n:'肥牛片',c:'蛋白',d:7}, tuna:{n:'金枪鱼罐头',c:'蛋白',d:21}, shrimp:{n:'冻虾仁',c:'蛋白',d:14},
+  basa:{n:'冻巴沙鱼',c:'蛋白',d:14}, tofu:{n:'北豆腐',c:'蛋白',d:4}, edamame:{n:'冻毛豆',c:'蛋白',d:21},
+  milk:{n:'牛奶',c:'奶类',d:5}, yogurt:{n:'希腊酸奶',c:'奶类',d:7}, cheese:{n:'芝士片',c:'奶类',d:14}, whey:{n:'蛋白粉',c:'奶类',d:30},
+  rice:{n:'大米',c:'主食',d:30}, oats:{n:'燕麦片',c:'主食',d:21}, noodle:{n:'意面/挂面',c:'主食',d:21},
+  bread:{n:'全麦面包',c:'主食',d:6}, tortilla:{n:'卷饼皮',c:'主食',d:14}, potato:{n:'土豆',c:'主食',d:10}, sweetpotato:{n:'红薯',c:'主食',d:10},
+  banana:{n:'香蕉',c:'果蔬',d:5}, tomato:{n:'番茄',c:'果蔬',d:6}, broccoli:{n:'西兰花',c:'果蔬',d:5},
+  greens:{n:'生菜/菠菜',c:'果蔬',d:4}, frozenveg:{n:'速冻杂菜',c:'果蔬',d:21}, onion:{n:'洋葱',c:'果蔬',d:14}, kimchi:{n:'韩式泡菜',c:'果蔬',d:21},
+  pb:{n:'花生酱',c:'调料',d:40}, soy:{n:'酱油',c:'调料',d:60}, oil:{n:'食用油',c:'调料',d:45}, garlic:{n:'蒜',c:'调料',d:21}
+};
+const CATS = ['蛋白','奶类','主食','果蔬','调料'];
+const GEAR = {micro:'微波炉', stove:'灶台/电磁炉', airfryer:'空气炸锅', ricecooker:'电饭煲'};
+const AVOID = {
+  veg:{n:'素食', ids:['chicken','readychicken','beef','tuna','shrimp','basa']},
+  nobeef:{n:'不吃牛肉', ids:['beef']},
+  nosea:{n:'不吃海鲜', ids:['tuna','shrimp','basa']},
+  nodairy:{n:'乳糖不耐', ids:['milk','yogurt','cheese']}
+};
+// t = total minutes, a = hands-on minutes, w = dishes to wash, lv = difficulty 1-3
+const R = [
+  {id:'r1',n:'番茄炒蛋盖饭',g:['stove'],t:15,a:12,w:2,lv:1,k:640,p:26,c:88,f:20,need:['egg','tomato','rice'],st:['oil'],tags:['正餐'],
+   s:['番茄切块，3 个鸡蛋打散加一点盐','热锅放油，倒蛋液，凝固后盛出','锅里再放点油炒番茄，压出汁','倒回鸡蛋翻匀，加盐和一点糖，盖在米饭上']},
+  {id:'r2',n:'空气炸锅鸡胸配红薯',g:['airfryer'],t:25,a:6,w:1,lv:1,k:450,p:45,c:50,f:6,need:['chicken','sweetpotato'],st:['oil','soy'],tags:['练后','正餐','备餐'],
+   s:['鸡胸用叉子戳几下，抹酱油、黑胡椒腌 5 分钟','红薯洗净切块','红薯和鸡胸一起放进炸锅，刷一点油','200°C 18 分钟，中途翻面一次']},
+  {id:'r3',n:'隔夜燕麦蛋白杯',g:[],t:5,a:5,w:1,lv:1,k:445,p:35,c:55,f:9,need:['oats','milk','whey'],st:[],tags:['早餐','练前','备餐'],
+   s:['杯子里放 50g 燕麦和一勺蛋白粉','倒 250ml 牛奶搅匀','盖上放冰箱过夜，早上直接吃（可以切香蕉放上面）']},
+  {id:'r4',n:'希腊酸奶香蕉燕麦碗',g:[],t:3,a:3,w:1,lv:1,k:330,p:22,c:48,f:5,need:['yogurt','banana','oats'],st:[],tags:['早餐','练前','加餐'],
+   s:['碗里放 200g 希腊酸奶','香蕉切片铺上','撒一把燕麦片']},
+  {id:'r5',n:'金枪鱼杂菜拌饭',g:['micro'],t:8,a:4,w:1,lv:1,k:510,p:34,c:70,f:10,need:['tuna','rice','frozenveg'],st:['soy'],tags:['正餐'],
+   s:['速冻杂菜放碗里，盖保鲜膜微波 3 分钟','加入一碗米饭和沥干的金枪鱼','淋酱油，拌匀，再微波 1 分钟']},
+  {id:'r6',n:'肥牛番茄汤面',g:['stove'],t:15,a:10,w:1,lv:1,k:620,p:32,c:75,f:22,need:['beef','tomato','noodle'],st:['oil'],tags:['正餐','练后'],
+   s:['番茄切块，用一点油炒出汁','加两碗水烧开，下面条','面快熟时放肥牛片，变色就关火','加盐调味']},
+  {id:'r7',n:'电饭煲鸡胸杂菜焖饭',g:['ricecooker'],t:45,a:10,w:1,lv:1,k:590,p:40,c:85,f:10,need:['chicken','rice','frozenveg'],st:['soy','oil'],tags:['正餐','备餐'],
+   s:['米洗好，水比平时少一点','鸡胸切丁，用酱油和一点油抓匀','鸡丁和杂菜铺在米上','按煮饭键，好了拌匀（一锅能分 3 盒）']},
+  {id:'r8',n:'微波炉虾仁蒸蛋',g:['micro'],t:8,a:3,w:1,lv:1,k:240,p:30,c:3,f:12,need:['egg','shrimp'],st:['soy'],tags:['加餐','练后'],
+   s:['3 个鸡蛋加 1.5 倍温水和一点盐打匀','放入解冻的虾仁','盖保鲜膜戳几个洞，中火微波 4–5 分钟','淋一点酱油']},
+  {id:'r9',n:'虾仁西兰花蛋炒饭',g:['stove'],t:15,a:12,w:1,lv:2,k:570,p:32,c:80,f:14,need:['shrimp','broccoli','rice','egg'],st:['oil','soy'],tags:['正餐'],
+   s:['西兰花切小朵，开水烫 1 分钟','热油炒散鸡蛋，推到一边','放虾仁炒到变色','加米饭和西兰花炒散，酱油调味']},
+  {id:'r10',n:'番茄豆腐蛋汤',g:['stove'],t:12,a:8,w:1,lv:1,k:280,p:24,c:12,f:14,need:['tofu','tomato','egg'],st:['oil'],tags:['加餐','正餐'],
+   s:['番茄切块炒出汁，加两碗水','豆腐切块放进去煮 3 分钟','鸡蛋打散，转圈淋进锅里','加盐关火']},
+  {id:'r11',n:'蛋白粉香蕉奶昔',g:[],t:2,a:2,w:1,lv:1,k:310,p:32,c:35,f:5,need:['whey','milk','banana'],st:[],tags:['练后','加餐'],
+   s:['摇摇杯里放一勺蛋白粉和 250ml 牛奶','摇 20 秒','配一根香蕉吃']},
+  {id:'r12',n:'花生酱香蕉吐司',g:[],t:3,a:3,w:0,lv:1,k:410,p:14,c:52,f:16,need:['bread','pb','banana'],st:[],tags:['练前','早餐'],
+   s:['两片全麦面包抹花生酱','铺香蕉片，合起来吃']},
+  {id:'r13',n:'即食鸡胸芝士卷饼',g:['micro'],t:5,a:4,w:0,lv:1,k:430,p:38,c:40,f:12,need:['tortilla','readychicken','cheese'],st:[],tags:['正餐','练后'],
+   s:['卷饼皮铺上芝士片','放撕碎的即食鸡胸，有生菜就加','卷起来微波 40 秒']},
+  {id:'r14',n:'即食鸡胸鸡蛋沙拉',g:['micro'],t:6,a:5,w:1,lv:1,k:260,p:34,c:8,f:10,need:['readychicken','greens','egg'],st:[],tags:['加餐','正餐'],
+   s:['鸡蛋放碗里加水没过，盖盘子微波 6 分钟（或用煮好的蛋）','生菜撕碎放大碗','放上鸡胸和切开的鸡蛋，酱汁随意']},
+  {id:'r15',n:'空气炸锅巴沙鱼配杂菜',g:['airfryer'],t:18,a:4,w:1,lv:1,k:230,p:30,c:12,f:6,need:['basa','frozenveg'],st:['oil'],tags:['正餐','练后'],
+   s:['巴沙鱼解冻后擦干，撒盐和胡椒','杂菜和鱼一起放炸锅，喷一点油','200°C 12–14 分钟']},
+  {id:'r16',n:'蒜香牛肉西兰花饭',g:['stove'],t:15,a:12,w:2,lv:2,k:610,p:38,c:80,f:16,need:['beef','broccoli','rice'],st:['soy','garlic','oil'],tags:['正餐','练后'],
+   s:['西兰花切小朵烫 1 分钟','热油炒香蒜末，下肥牛炒到变色','加西兰花和两勺酱油炒匀','盖在米饭上']},
+  {id:'r17',n:'毛豆鸡蛋炒饭',g:['stove'],t:12,a:10,w:1,lv:1,k:560,p:26,c:82,f:16,need:['edamame','egg','rice'],st:['oil','soy'],tags:['正餐'],
+   s:['毛豆用开水泡 2 分钟','热油炒散两个鸡蛋','加米饭和毛豆炒散','酱油和盐调味']},
+  {id:'r18',n:'泡菜豆腐汤配饭',g:['stove'],t:15,a:8,w:1,lv:1,k:480,p:24,c:70,f:12,need:['kimchi','tofu','rice'],st:['oil'],tags:['正餐'],
+   s:['泡菜用一点油炒 1 分钟','加两碗水煮开','豆腐切块放入煮 5 分钟，配米饭']},
+  {id:'r19',n:'微波炉芝士土豆蛋',g:['micro'],t:12,a:4,w:1,lv:1,k:390,p:22,c:40,f:16,need:['potato','egg','cheese'],st:[],tags:['正餐','加餐'],
+   s:['土豆切薄片，盖保鲜膜微波 5 分钟','打两个鸡蛋在上面，戳破蛋黄','铺芝士片，再微波 2 分钟']},
+  {id:'r20',n:'香蕉燕麦蛋白松饼',g:['stove'],t:15,a:12,w:2,lv:2,k:400,p:30,c:50,f:8,need:['oats','egg','banana','whey'],st:['oil'],tags:['早餐','练前'],
+   s:['香蕉压成泥，加两个鸡蛋、40g 燕麦和半勺蛋白粉拌匀','平底锅刷薄油，小火','舀一勺面糊，起泡后翻面','两面金黄就好']},
+  {id:'r21',n:'一锅番茄鸡胸意面',g:['stove'],t:20,a:12,w:1,lv:2,k:650,p:45,c:90,f:12,need:['chicken','noodle','tomato'],st:['oil','garlic'],tags:['正餐','练后','备餐'],
+   s:['鸡胸切丁，用油煎到变白','加蒜末和番茄块炒出汁','加 500ml 水烧开，放意面','中火煮到水快收干，期间搅几次，加盐']},
+  {id:'r22',n:'空气炸锅酱油豆腐',g:['airfryer'],t:20,a:5,w:1,lv:1,k:220,p:20,c:8,f:12,need:['tofu'],st:['soy','oil'],tags:['加餐','正餐'],
+   s:['豆腐切块，用厨房纸吸干水','拌一勺酱油和一点油','200°C 15 分钟，中途摇一下']},
+  {id:'r23',n:'金枪鱼全麦三明治',g:[],t:5,a:5,w:0,lv:1,k:350,p:30,c:40,f:8,need:['tuna','bread','greens'],st:[],tags:['正餐','练后'],
+   s:['金枪鱼沥干，加一点黑胡椒拌匀','面包夹生菜和金枪鱼','切半就能吃']},
+  {id:'r24',n:'牛奶燕麦粥配鸡蛋',g:['micro'],t:6,a:3,w:1,lv:1,k:430,p:26,c:50,f:14,need:['oats','milk','egg'],st:[],tags:['早餐','练前'],
+   s:['50g 燕麦加 250ml 牛奶，微波 2 分钟','另一个碗打入两个鸡蛋打散，微波 1 分半','一起吃']},
+  {id:'r25',n:'洋葱肥牛饭',g:['stove'],t:15,a:12,w:1,lv:1,k:660,p:32,c:85,f:22,need:['beef','onion','rice'],st:['soy','oil'],tags:['正餐','练后'],
+   s:['洋葱切丝，用一点油炒软','加 3 勺酱油、1 勺糖、半碗水煮开','放肥牛煮到变色','连汤带肉盖在米饭上']},
+  {id:'r26',n:'电饭煲整颗番茄鸡胸饭',g:['ricecooker'],t:45,a:8,w:1,lv:1,k:580,p:40,c:88,f:8,need:['tomato','chicken','rice'],st:['soy','oil'],tags:['正餐','备餐'],
+   s:['米洗好，水比平时少一些','鸡胸切丁加酱油抓匀，铺在米上','番茄去蒂，整颗放在正中间','煮好后把番茄压碎拌匀']},
+  {id:'r27',n:'一次煮 8 个白煮蛋',g:['stove'],t:15,a:2,w:1,lv:1,k:210,p:19,c:2,f:15,need:['egg'],st:[],tags:['加餐','备餐'],
+   s:['冷水下锅，水没过鸡蛋','开锅后转小火煮 8 分钟','捞出泡冷水，冰箱能放 5 天（这里按一份 3 个算）']},
+  {id:'r28',n:'虾仁番茄意面',g:['stove'],t:18,a:12,w:1,lv:2,k:580,p:34,c:88,f:10,need:['shrimp','tomato','noodle'],st:['oil','garlic'],tags:['正餐','练后'],
+   s:['意面按包装时间煮好，留半碗面汤','蒜末和番茄块炒出汁','放虾仁炒到变色','倒入意面和面汤拌匀，加盐']}
+];
+const QUICK = [
+  {n:'蛋白粉一勺',k:120,p:24,c:3,f:1},{n:'鸡蛋 1 个',k:72,p:6,c:0,f:5},{n:'牛奶 250ml',k:150,p:8,c:12,f:8},
+  {n:'希腊酸奶 1 盒',k:130,p:15,c:8,f:4},{n:'即食鸡胸 1 袋',k:110,p:22,c:2,f:2},{n:'米饭 1 碗',k:230,p:4,c:50,f:1}
+];
+const SORTS = {protein:'蛋白质最多', fast:'动手最少', wash:'碗最少', ratio:'蛋白/热量比'};
+const TAGS = ['全部','正餐','早餐','练前','练后','加餐'];
+
+// ---------- dates ----------
+const DAY = 864e5;
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today = () => ymd(new Date());
+const daysAgo = n => ymd(new Date(Date.now() - n*DAY));
+const diffDays = (a,b) => Math.round((new Date(b+'T12:00') - new Date(a+'T12:00'))/DAY);
+const hm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+// ---------- state ----------
+const KEY = 'lianhou-chisha-v1';
+function demoState(){
+  const B = (...ns) => ns.map(daysAgo);
+  const at = (h,m) => { const d = new Date(); d.setHours(h,m,0,0); return d.getTime(); };
+  return {
+    demo:true,
+    profile:{sex:'m',age:21,h:178,w:75,goal:'bulk',days:5,time:'18:00',gear:['micro','stove','airfryer','ricecooker'],avoid:[]},
+    pantry:{
+      egg:{st:'have',b:B(20,14,8,2)}, chicken:{st:'have',b:B(11,6)}, readychicken:{st:'have',b:B(3)},
+      beef:{st:'out',b:B(9)}, tuna:{st:'have',b:B(10)}, shrimp:{st:'have',b:B(12)}, tofu:{st:'have',b:B(2)},
+      milk:{st:'have',b:B(15,10,5)}, yogurt:{st:'have',b:B(4)}, whey:{st:'have',b:B(26)},
+      rice:{st:'have',b:B(12)}, oats:{st:'have',b:B(17)}, noodle:{st:'have',b:B(6)}, bread:{st:'out',b:B(8)},
+      sweetpotato:{st:'have',b:B(3)}, banana:{st:'have',b:B(9,5)}, tomato:{st:'have',b:B(4)},
+      broccoli:{st:'out',b:B(7)}, frozenveg:{st:'have',b:B(8)}, onion:{st:'have',b:B(5)},
+      soy:{st:'have',b:B(30)}, oil:{st:'have',b:B(20)}, garlic:{st:'have',b:B(9)}
+    },
+    extra:[], checked:{},
+    log:[{d:today(),ts:at(8,10),n:'隔夜燕麦蛋白杯',k:445,p:35,c:55,f:9},{d:today(),ts:at(12,35),n:'番茄炒蛋盖饭',k:640,p:26,c:88,f:20},{d:today(),ts:at(15,20),n:'希腊酸奶 1 盒',k:130,p:15,c:8,f:4}],
+    train:{}, sort:'protein', tag:'全部', onlyNow:true, prepPick:0
+  };
+}
+function emptyState(){
+  return {demo:false, profile:null, pantry:{}, extra:[], checked:{}, log:[], train:{}, sort:'protein', tag:'全部', onlyNow:false, prepPick:0};
+}
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)) || demoState(); } catch(e) { S = demoState(); }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
+
+// ---------- logic ----------
+function targets(p){
+  if(!p) return null;
+  const bmr = 10*p.w + 6.25*p.h - 5*p.age + (p.sex==='m' ? 5 : -161);
+  const fac = [1.3,1.375,1.45,1.5,1.55,1.65,1.725,1.8][p.days];
+  const tdee = bmr*fac;
+  const adj = {cut:-0.2, maintain:0, bulk:0.1}[p.goal];
+  const kcal = Math.round(Math.max(tdee*(1+adj), bmr)/10)*10;
+  const ppk = {cut:2.2, maintain:1.8, bulk:2.0}[p.goal];
+  const pr = Math.round(p.w*ppk);
+  const fat = Math.round(kcal*0.25/9);
+  const carb = Math.max(0, Math.round((kcal - pr*4 - fat*9)/4));
+  const bmi = p.w/((p.h/100)**2);
+  return {bmr:Math.round(bmr), fac, tdee:Math.round(tdee), kcal, p:pr, f:fat, c:carb, ppk, bmi};
+}
+function avoided(){ const s = new Set(); (S.profile?.avoid||[]).forEach(a => AVOID[a].ids.forEach(i => s.add(i))); return s; }
+// how often this person rebuys an item: mean gap between purchases, else the default
+function interval(id){
+  const b = (S.pantry[id]?.b||[]).slice().sort();
+  if(b.length < 2) return {v:ING[id].d, learned:false, n:b.length};
+  const gaps = []; for(let i=1;i<b.length;i++) gaps.push(diffDays(b[i-1],b[i]));
+  const v = gaps.reduce((a,x)=>a+x,0)/gaps.length;
+  return {v:Math.max(1,v), learned:true, n:b.length};
+}
+function pstat(id){
+  const it = S.pantry[id]; if(!it) return {st:'none'};
+  const iv = interval(id);
+  const last = (it.b||[]).slice().sort().pop();
+  const since = last ? diffDays(last, today()) : 0;
+  const left = Math.round(iv.v - since);
+  if(it.st==='out') return {st:'out', iv, since, left};
+  if(since >= iv.v*0.85) return {st:'low', iv, since, left};
+  return {st:'have', iv, since, left};
+}
+const available = id => { const s = pstat(id).st; return s==='have' || s==='low'; };
+function recipeOk(r){
+  const gear = S.profile?.gear || Object.keys(GEAR);
+  if(!r.g.every(g => gear.includes(g))) return false;
+  const av = avoided(); return !r.need.some(i => av.has(i));
+}
+const missing = r => r.need.filter(i => !available(i));
+function todayLog(){ return S.log.filter(e => e.d===today()); }
+function eaten(){ return todayLog().reduce((a,e)=>({k:a.k+e.k,p:a.p+e.p,c:a.c+e.c,f:a.f+e.f}),{k:0,p:0,c:0,f:0}); }
+function isTraining(){
+  if(S.train[today()] !== undefined) return S.train[today()];
+  const days = S.profile?.days ?? 0; const wd = (new Date().getDay()+6)%7; // Mon=0
+  const plan = [[],[2],[0,3],[0,2,4],[0,1,3,4],[0,1,2,3,4],[0,1,2,3,4,5],[0,1,2,3,4,5,6]][days];
+  return plan.includes(wd);
+}
+function timing(){
+  if(!S.profile?.time || !isTraining()) return null;
+  const [h,m] = S.profile.time.split(':').map(Number);
+  const w = new Date(); w.setHours(h,m,0,0);
+  const mins = Math.round((w - new Date())/6e4);
+  if(mins > 180) return {k:'early', mins};
+  if(mins > 0) return {k:'pre', mins};
+  if(mins > -120) return {k:'post', mins:-mins};
+  return {k:'done', mins:-mins};
+}
+function sortRecipes(list, how){
+  const f = {protein:(a,b)=>b.p-a.p, fast:(a,b)=>a.a-b.a||b.p-a.p, wash:(a,b)=>a.w-b.w||b.p-a.p, ratio:(a,b)=>b.p/b.k-a.p/a.k}[how];
+  return list.slice().sort((a,b) => missing(a).length-missing(b).length || f(a,b));
+}
+function suggestNext(){
+  const t = targets(S.profile); if(!t) return [];
+  const e = eaten(); const remP = t.p - e.p, remK = t.kcal - e.k;
+  const tm = timing();
+  const want = tm?.k==='pre' ? '练前' : tm?.k==='post' ? '练后' : null;
+  return R.filter(r => recipeOk(r) && missing(r).length===0).map(r => {
+    let s = -Math.abs(Math.min(remP, 45) - r.p);
+    if(r.k > remK + 150) s -= 30;
+    if(want && r.tags.includes(want)) s += 25;
+    if(want==='练前' && r.lv>1) s -= 5;
+    return {r, s};
+  }).sort((a,b)=>b.s-a.s).slice(0,2).map(x=>x.r);
+}
+function prepCombos(){
+  const pool = R.filter(r => recipeOk(r) && r.p >= 25 && (r.tags.includes('正餐') || r.tags.includes('备餐')));
+  const out = [];
+  for(let i=0;i<pool.length;i++) for(let j=i+1;j<pool.length;j++) for(let k=j+1;k<pool.length;k++){
+    const set = [pool[i],pool[j],pool[k]];
+    const cnt = {}; set.forEach(r => r.need.forEach(x => cnt[x]=(cnt[x]||0)+1));
+    const uniq = Object.keys(cnt); const shared = uniq.filter(x => cnt[x]>1);
+    const miss = uniq.filter(x => !available(x));
+    const prep = set.filter(r => r.tags.includes('备餐')).length;
+    const score = set.reduce((a,r)=>a+r.p,0) + shared.length*14 - uniq.length*6 - miss.length*5 + prep*8 - set.reduce((a,r)=>a+r.a,0)*0.4;
+    out.push({set, shared, uniq, miss, score});
+  }
+  out.sort((a,b)=>b.score-a.score);
+  const picked = [], seen = new Set();
+  for(const c of out){ const key = c.set.map(r=>r.id); if(key.some(id => seen.has(id)) && picked.length<3) continue; picked.push(c); key.forEach(id=>seen.add(id)); if(picked.length>=5) break; }
+  return picked;
+}
+function shopList(){
+  const items = new Map();
+  Object.keys(S.pantry).forEach(id => { const s = pstat(id).st; if(s==='out') items.set(id,'没了'); else if(s==='low') items.set(id,'快没了'); });
+  S.extra.forEach(id => { if(!items.has(id)) items.set(id,'做菜要用'); });
+  return [...items].map(([id,why]) => ({id, why}));
+}
+
+// ---------- ui helpers ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let toastT;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>t.hidden=true, 2000); }
+const ICON = {
+  today:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+  cook:'<path d="M4 11h16a8 8 0 0 1-16 0Z"/><path d="M9 7c0-1.5 1-2 1-3.5M14 7c0-1.5 1-2 1-3.5"/>',
+  pantry:'<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M6 10h12M9 6.5v1.5M9 13v2"/>',
+  shop:'<path d="M4 5h2l2 10h10l2-7H7"/><circle cx="10" cy="19" r="1.3"/><circle cx="17" cy="19" r="1.3"/>',
+  prep:'<rect x="3" y="7" width="8" height="6" rx="1.5"/><rect x="13" y="7" width="8" height="6" rx="1.5"/><rect x="8" y="15" width="8" height="6" rx="1.5"/>',
+  me:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/>'
+};
+const TABS = [['today','今天'],['cook','能做啥'],['pantry','冰箱'],['shop','购物'],['prep','备餐'],['me','我的']];
+let tab = 'today';
+
+function render(){
+  const d = new Date();
+  $('#datechip').textContent = `${d.getMonth()+1}月${d.getDate()}日 周${'日一二三四五六'[d.getDay()]}`;
+  $('#banner').innerHTML = S.demo ? `<div class="banner"><p>现在看到的是<b>示例数据</b>：一位 75kg、每周练 5 次、在增肌的大学生。随便点，感受一下。</p><button class="btn primary small" data-act="mine">换成我自己的</button></div>` : '';
+  const n = shopList().length;
+  $('#tabs').innerHTML = TABS.map(([k,l]) => `<a href="#${k}" ${k===tab?'aria-current="page"':''}><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>${l}${k==='shop'&&n?`<span class="dot">${n}</span>`:''}</a>`).join('');
+  if(!S.profile && tab!=='me') tab = 'me';
+  $('#view').innerHTML = {today:vToday, cook:vCook, pantry:vPantry, shop:vShop, prep:vPrep, me:vMe}[tab]();
+}
+
+function vToday(){
+  const t = targets(S.profile), e = eaten();
+  const pct = Math.min(1, e.p/t.p), C = 2*Math.PI*62;
+  const tm = timing(), tr = isTraining();
+  let tmHtml = '';
+  if(tr && tm){
+    const h = m => m>=60 ? `${Math.floor(m/60)} 小时 ${m%60} 分` : `${m} 分钟`;
+    tmHtml = {
+      early:`<div class="timing">${S.profile.time} 训练，还有 ${h(tm.mins)}。正常吃一顿正餐就好。</div>`,
+      pre:`<div class="timing pre"><b>练前窗口</b>：离训练还有 ${h(tm.mins)}。吃点好消化的碳水，别吃太油太撑。</div>`,
+      post:`<div class="timing post"><b>练后窗口</b>：练完 ${h(tm.mins)}。现在补 30–45g 蛋白和一些碳水最划算。</div>`,
+      done:`<div class="timing">今天的训练已经结束，把剩下的蛋白质吃够就行。</div>`
+    }[tm.k];
+  }
+  const sug = suggestNext();
+  const remP = Math.max(0, t.p - e.p);
+  const lg = todayLog().sort((a,b)=>a.ts-b.ts);
+  const bar = (name, v, max, cls) => `<div class="bar"><div class="t"><span>${name}</span><span>${Math.round(v)} / ${max}</span></div><div class="track"><div class="fill ${v>max*1.05?'w':cls}" style="width:${Math.min(100, v/max*100)}%"></div></div></div>`;
+  return `
+  <section class="card">
+    <div class="plate">
+      <div class="ring" role="img" aria-label="今日蛋白质 ${e.p} / ${t.p} 克">
+        <svg viewBox="0 0 150 150"><circle cx="75" cy="75" r="62" fill="none" stroke="var(--sunk)" stroke-width="14"/><circle cx="75" cy="75" r="62" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct)}" style="transition:stroke-dashoffset .5s"/></svg>
+        <div class="c"><span class="label">蛋白质</span><span class="big">${e.p}</span><span class="of num">/ ${t.p} g</span></div>
+      </div>
+      <div class="bars">
+        ${bar('热量 kcal', e.k, t.kcal, 'y')}
+        ${bar('碳水 g', e.c, t.c, 'm')}
+        ${bar('脂肪 g', e.f, t.f, 'm')}
+        <p class="note" style="margin:0">${remP>0 ? `还差 <b class="num">${remP}g</b> 蛋白，大约 ${Math.max(1,Math.round(remP/35))} 顿。` : '今天的蛋白质已经吃够了 💪'}</p>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="train">
+      <label class="switch"><input type="checkbox" id="trainToggle" ${tr?'checked':''}> 今天要练</label>
+      ${tr ? `<span class="sub">计划 ${esc(S.profile.time||'未设置')} 开练</span>` : '<span class="sub">休息日，蛋白照样吃够</span>'}
+    </div>
+    ${tmHtml}
+  </section>
+  <section class="stack">
+    <div class="row between"><h2>下一顿吃这个</h2><a class="btn small ghost" href="#cook">全部菜谱</a></div>
+    ${sug.length ? `<div class="rlist">${sug.map(rCard).join('')}</div>` : `<div class="card empty">冰箱里的东西凑不齐一道菜。去<a href="#shop">购物清单</a>看看缺什么。</div>`}
+  </section>
+  <section class="card">
+    <div class="row between"><h3>今天吃了</h3><span class="sub num">${e.k} kcal</span></div>
+    <div class="row">${QUICK.map((q,i)=>`<button class="btn small" data-quick="${i}">+ ${q.n}</button>`).join('')}</div>
+    ${lg.length ? `<div class="log">${lg.map(x=>`<div class="it"><span class="tm">${hm(new Date(x.ts))}</span><span>${esc(x.n)}</span><span class="chip p">${x.p}g</span><button class="x" aria-label="删除 ${esc(x.n)}" data-del="${x.ts}">×</button></div>`).join('')}</div>` : '<div class="empty">还没记录。吃完点一下上面的按钮，或者在菜谱里点「吃了这个」。</div>'}
+  </section>`;
+}
+
+function rCard(r){
+  const m = missing(r);
+  const miss = m.length===0 ? `<span class="chip ok">✓ 食材齐了</span>` : `<span class="chip ${m.length>1?'out':'low'}">差 ${m.map(i=>ING[i].n).join('、')}</span>`;
+  return `<button class="rc ${m.length?'dim':''}" data-recipe="${r.id}">
+    <span class="nm">${r.n}</span>
+    <span class="pp"><b>${r.p}</b><span>g 蛋白</span></span>
+    <span class="meta"><span>动手 ${r.a} 分</span>·<span>共 ${r.t} 分</span>·<span>${r.w===0?'不用洗碗':`洗 ${r.w} 个`}</span>·<span class="num">${r.k} kcal</span>${r.g.length?`·<span>${r.g.map(g=>GEAR[g]).join('+')}</span>`:'·<span>免开火</span>'}</span>
+    <span class="miss">${miss}</span>
+  </button>`;
+}
+
+function vCook(){
+  const ok = R.filter(recipeOk);
+  const hidden = R.length - ok.length;
+  let list = ok.filter(r => S.tag==='全部' || r.tags.includes(S.tag));
+  if(S.onlyNow) list = list.filter(r => missing(r).length <= 1);
+  list = sortRecipes(list, S.sort);
+  const ready = ok.filter(r => !missing(r).length).length;
+  return `
+  <div><h2>用冰箱里的东西能做啥</h2><p class="sub">现在能直接做 <b>${ready}</b> 道 · 全部按「缺几样」排序${hidden?` · ${hidden} 道因为厨具或忌口被隐藏`:''}</p></div>
+  <div class="seg" role="group" aria-label="餐别">${TAGS.map(t=>`<button aria-pressed="${S.tag===t}" data-tag="${t}">${t}</button>`).join('')}</div>
+  <div class="row between">
+    <div class="seg" role="group" aria-label="排序">${Object.entries(SORTS).map(([k,l])=>`<button aria-pressed="${S.sort===k}" data-sort="${k}">${l}</button>`).join('')}</div>
+  </div>
+  <label class="switch"><input type="checkbox" id="onlyNow" ${S.onlyNow?'checked':''}> 只看现在能做的（最多差一样）</label>
+  <div class="rlist">${list.length ? list.map(rCard).join('') : '<div class="card empty">没有符合的菜。关掉上面的「只看现在能做的」试试。</div>'}</div>`;
+}
+
+function vPantry(){
+  const ids = Object.keys(S.pantry);
+  const rest = Object.keys(ING).filter(i => !S.pantry[i]);
+  const lows = ids.filter(i => pstat(i).st==='low').length;
+  return `
+  <div><h2>冰箱</h2><p class="sub">买东西时点「买了」。记录越多，它越懂你多久吃完一样东西。${lows?` 现在有 <b>${lows}</b> 样预计快没了。`:''}</p></div>
+  ${CATS.map(c => { const its = ids.filter(i => ING[i].c===c); if(!its.length) return ''; return `
+    <section class="card cat"><span class="label">${c}</span>
+      ${its.map(i => { const s = pstat(i), iv = s.iv;
+        const chip = {have:'<span class="chip ok">有</span>', low:`<span class="chip low">快没了</span>`, out:'<span class="chip out">没了</span>'}[s.st];
+        const est = s.st==='out' ? `上次买是 ${s.since} 天前` : s.left > 0 ? `大约还能撑 ${s.left} 天` : s.left===0 ? '按习惯今天左右就吃完了' : `按习惯 ${-s.left} 天前就该吃完了`;
+        const how = iv.learned ? `你平均 ${iv.v.toFixed(1)} 天买一次（${iv.n} 次记录）` : `先按 ${iv.v} 天算，多买几次就准了`;
+        const used = s.st==='out' ? 100 : Math.min(100, s.since/iv.v*100);
+        return `<div class="pi"><span class="n">${ING[i].n} ${chip}</span>
+          <div class="acts"><button class="btn small" data-buy="${i}">买了</button>${s.st!=='out'?`<button class="btn small ghost" data-out="${i}">吃完了</button>`:''}</div>
+          <div class="track"><div class="fill ${s.st==='out'?'w':s.st==='low'?'y':''}" style="width:${used}%"></div></div>
+          <span class="est">${est} · ${how}</span></div>`; }).join('')}
+    </section>`; }).join('')}
+  ${!ids.length ? '<div class="card empty">冰箱是空的。从下面点几样你常买的东西。</div>' : ''}
+  ${rest.length ? `<section class="card"><h3>添加食材</h3><div class="addpick">${rest.map(i=>`<button data-add="${i}">+ ${ING[i].n}</button>`).join('')}</div></section>` : ''}`;
+}
+
+function vShop(){
+  const L = shopList();
+  const chk = L.filter(x => S.checked[x.id]).length;
+  const rest = Object.keys(ING).filter(i => !L.some(x => x.id===i));
+  return `
+  <div><h2>购物清单</h2><p class="sub">自动生成：吃完的、按你的习惯快吃完的，加上你做菜缺的。</p></div>
+  <section class="card">
+    ${L.length ? L.map(x => `<div class="si ${S.checked[x.id]?'done':''}"><input type="checkbox" id="sh-${x.id}" data-check="${x.id}" ${S.checked[x.id]?'checked':''}><label for="sh-${x.id}"><span>${ING[x.id].n}</span><span class="chip ${x.why==='没了'?'out':x.why==='快没了'?'low':''}">${x.why}</span></label>${x.why==='做菜要用'?`<button class="x" aria-label="移除" data-unextra="${x.id}">×</button>`:''}</div>`).join('') : '<div class="empty">什么都不缺，冰箱很满 👌</div>'}
+  </section>
+  ${L.length ? `<div class="row"><button class="btn primary" data-act="bought" ${chk?'':'disabled'}>勾选的都买好了（${chk}）</button><button class="btn" data-act="copy">复制清单</button></div>` : ''}
+  <section class="card"><h3>手动加一样</h3><div class="addpick">${rest.map(i=>`<button data-extra="${i}">+ ${ING[i].n}</button>`).join('')}</div></section>`;
+}
+
+function vPrep(){
+  const t = targets(S.profile);
+  const combos = prepCombos();
+  if(!combos.length) return `<div><h2>周日备餐</h2></div><div class="card empty">你的厨具或忌口下没有合适的备餐组合。去「我的」里多勾一些厨具试试。</div>`;
+  const c = combos[S.prepPick % combos.length];
+  const totP = c.set.reduce((a,r)=>a+r.p,0)*2;
+  const days = ['一','二','三','四','五','六','日'];
+  const plan = [0,1,2,0,1,2,null];
+  return `
+  <div><h2>周日备餐</h2><p class="sub">挑 3 道共用食材的菜，各做 2 份，一次买菜、一次开火，解决工作日 6 顿饭。</p></div>
+  <section class="card">
+    <div class="row between"><span class="label">方案 ${S.prepPick % combos.length + 1} / ${combos.length}</span><button class="btn small" data-act="nextprep">换一组</button></div>
+    <div class="rlist">${c.set.map(rCard).join('')}</div>
+    <div class="prepdays">${days.map((d,i)=>`<div>周${d}<b>${plan[i]===null?'自由':'ABC'[plan[i]]}</b></div>`).join('')}</div>
+    <p class="note" style="margin:0">${c.set.map((r,i)=>`<b>${'ABC'[i]}</b> ${r.n}`).join(' · ')}</p>
+    <p class="note" style="margin:0">6 顿备餐共 <b class="num">${totP}g</b> 蛋白，占你一周目标的 <b class="num">${Math.round(totP/(t.p*7)*100)}%</b>。剩下的用早餐和加餐补。</p>
+  </section>
+  <section class="card">
+    <h3>这次要用的食材（${c.uniq.length} 样）</h3>
+    <div class="ings">${c.uniq.map(i => `<span class="chip ${!available(i)?'out':c.shared.includes(i)?'shared':''}">${ING[i].n}${c.shared.includes(i)?' · 共用':''}${!available(i)?' · 要买':''}</span>`).join('')}</div>
+    ${c.miss.length ? `<button class="btn primary" data-act="prepshop" style="align-self:flex-start">把要买的 ${c.miss.length} 样加入购物清单</button>` : '<p class="note" style="margin:0">冰箱里都有，可以直接开做。</p>'}
+  </section>`;
+}
+
+function vMe(){
+  const p = S.profile || {sex:'m',age:20,h:175,w:70,goal:'maintain',days:3,time:'18:00',gear:['micro','stove'],avoid:[]};
+  const t = targets(S.profile);
+  const goalTxt = {cut:'减脂：热量比消耗少 20%，蛋白 2.2g/kg 保肌肉', maintain:'维持：热量等于消耗，蛋白 1.8g/kg', bulk:'增肌：热量多 10%，蛋白 2.0g/kg'};
+  return `
+  <div><h2>${S.profile?'我的身体档案':'先填一下基本信息'}</h2><p class="sub">用来算你每天该吃多少。数据只存在你这台设备的浏览器里。</p></div>
+  ${t ? `<section class="card"><span class="label">每日目标</span>
+    <div class="calc"><div><b>${t.kcal}</b><span>kcal 热量</span></div><div><b>${t.p}</b><span>g 蛋白质</span></div><div><b>${t.c}</b><span>g 碳水</span></div><div><b>${t.f}</b><span>g 脂肪</span></div></div>
+    <p class="why">基础代谢 ${t.bmr} kcal（Mifflin-St Jeor 公式）× 活动系数 ${t.fac}（每周练 ${S.profile.days} 次）= 每天消耗约 ${t.tdee} kcal。${goalTxt[S.profile.goal]}。BMI ${t.bmi.toFixed(1)}。</p>
+  </section>` : ''}
+  <form class="card" id="pf">
+    <div class="form">
+      <div class="field"><span class="label">性别</span><div class="checks"><label><input type="radio" name="sex" value="m" ${p.sex==='m'?'checked':''}>男</label><label><input type="radio" name="sex" value="f" ${p.sex==='f'?'checked':''}>女</label></div></div>
+      <div class="field"><label for="age">年龄</label><input id="age" name="age" type="number" min="14" max="80" value="${p.age}" required></div>
+      <div class="field"><label for="h">身高（cm）</label><input id="h" name="h" type="number" min="130" max="220" value="${p.h}" required></div>
+      <div class="field"><label for="w">体重（kg）</label><input id="w" name="w" type="number" min="35" max="200" step="0.1" value="${p.w}" required></div>
+      <div class="field"><label for="goal">目标</label><select id="goal" name="goal">${[['cut','减脂'],['maintain','维持/塑形'],['bulk','增肌']].map(([v,l])=>`<option value="${v}" ${p.goal===v?'selected':''}>${l}</option>`).join('')}</select></div>
+      <div class="field"><label for="days">每周训练几次</label><select id="days" name="days">${[0,1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${p.days==n?'selected':''}>${n} 次</option>`).join('')}</select></div>
+      <div class="field"><label for="time">一般几点练</label><input id="time" name="time" type="time" value="${p.time||''}"></div>
+      <div class="field full"><span class="label">家里有的厨具（没勾的菜会被隐藏）</span><div class="checks">${Object.entries(GEAR).map(([k,l])=>`<label><input type="checkbox" name="gear" value="${k}" ${p.gear.includes(k)?'checked':''}>${l}</label>`).join('')}</div></div>
+      <div class="field full"><span class="label">忌口</span><div class="checks">${Object.entries(AVOID).map(([k,a])=>`<label><input type="checkbox" name="avoid" value="${k}" ${p.avoid.includes(k)?'checked':''}>${a.n}</label>`).join('')}</div></div>
+    </div>
+    <button class="btn primary" type="submit" style="align-self:flex-start">${S.profile?'保存并重新计算':'算出我的目标'}</button>
+  </form>
+  <section class="card"><h3>数据</h3>
+    <div class="row"><button class="btn" data-act="demo">载入示例数据</button><button class="btn danger" data-act="reset" id="resetBtn">清空所有数据</button></div>
+  </section>`;
+}
+
+function sheet(r){
+  const m = missing(r);
+  const pct = S.profile ? Math.round(r.p/targets(S.profile).p*100) : 0;
+  $('#sheet').innerHTML = `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-modal="true" aria-label="${r.n}">
+    <div class="row between"><h2 style="margin:0">${r.n}</h2><button class="x" data-act="close" aria-label="关闭">×</button></div>
+    <div class="row">${r.tags.map(t=>`<span class="chip">${t}</span>`).join('')}<span class="chip">难度 <span class="lv">${'●'.repeat(r.lv)}${'○'.repeat(3-r.lv)}</span></span><span class="chip">动手 ${r.a} 分 / 共 ${r.t} 分</span></div>
+    <div class="macros"><div><b>${r.p}</b><span>g 蛋白</span></div><div><b>${r.k}</b><span>kcal</span></div><div><b>${r.c}</b><span>g 碳水</span></div><div><b>${r.f}</b><span>g 脂肪</span></div></div>
+    ${pct?`<p class="note" style="margin:0">这一份是你今天蛋白目标的 ${pct}%。</p>`:''}
+    <div class="stack" style="gap:6px"><span class="label">食材</span><div class="ings">${r.need.map(i=>`<span class="chip ${available(i)?'ok':'out'}">${available(i)?'✓':'✗'} ${ING[i].n}</span>`).join('')}${r.st.map(i=>`<span class="chip">${ING[i].n}</span>`).join('')}</div>
+    <span class="note">厨具：${r.g.length?r.g.map(g=>GEAR[g]).join('、'):'不需要开火'} · ${r.w===0?'不用洗碗':`要洗 ${r.w} 个锅碗`}</span></div>
+    <div class="stack" style="gap:6px"><span class="label">步骤</span><ol class="steps">${r.s.map(x=>`<li>${x}</li>`).join('')}</ol></div>
+    <div class="row"><button class="btn primary" data-eat="${r.id}">吃了这个</button>${m.length?`<button class="btn" data-needshop="${r.id}">缺的 ${m.length} 样加入购物清单</button>`:''}</div>
+  </div></div>`;
+}
+
+function guide(){
+  $('#sheet').innerHTML = `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-modal="true" aria-label="使用指南">
+    <div class="row between"><h2 style="margin:0">使用指南</h2><button class="x" data-act="close" aria-label="关闭">×</button></div>
+    <p class="sub">第一次用大概 3 分钟就能设置好。之后每天只需要点几下。</p>
+    <ol class="guide">
+      <li><b>填身体档案</b>（我的）：身高、体重、年龄、目标、每周练几次、几点练、家里有什么厨具、忌口。它会算出你每天要吃多少热量和蛋白质。</li>
+      <li><b>把冰箱里的东西加进去</b>（冰箱）：点「+ 鸡蛋」这样的按钮。以后每次买东西就点「买了」，吃光了就点「吃完了」。</li>
+      <li><b>看能做什么</b>（能做啥）：只推荐你现在食材够、厨具能做的菜。可以按蛋白最多、动手最少、洗碗最少来排。点开一道菜能看步骤。</li>
+      <li><b>记录吃了什么</b>（今天）：做完菜点「吃了这个」，或者用「+ 蛋白粉一勺」这类快捷按钮。圆环显示今天蛋白吃够没有。</li>
+      <li><b>训练日</b>：打开「今天要练」，练前 3 小时内会推荐好消化的练前餐，练完 2 小时内会推荐高蛋白练后餐。</li>
+      <li><b>去超市前</b>（购物）：清单自动列出吃完的和「按你的习惯快吃完」的东西。买完勾上，点「勾选的都买好了」，冰箱自动更新。</li>
+      <li><b>周日备餐</b>（备餐）：给你 3 道共用食材的菜，各做 2 份，管工作日 6 顿。不喜欢就点「换一组」。</li>
+    </ol>
+    <p class="note" style="margin:0">「快没了」是怎么算的：它记下你每样东西买的日期，算出你平均几天买一次。离上次买的天数接近这个间隔，就提醒你快没了。买得越多次，预测越准。</p>
+    <p class="note" style="margin:0">所有数据只存在这台设备的浏览器里，不会上传。换手机或清浏览器数据会丢失。</p>
+    <button class="btn primary" data-act="close" style="align-self:flex-start">知道了</button>
+  </div></div>`;
+}
+
+// ---------- events ----------
+function buy(id){ const it = S.pantry[id] || (S.pantry[id] = {st:'have', b:[]}); if(it.b[it.b.length-1] !== today()) it.b.push(today()); it.st = 'have'; S.extra = S.extra.filter(x=>x!==id); delete S.checked[id]; }
+let resetArmed = false;
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-act],[data-recipe],[data-quick],[data-del],[data-tag],[data-sort],[data-buy],[data-out],[data-add],[data-extra],[data-unextra],[data-eat],[data-needshop]');
+  if(!el) return;
+  const d = el.dataset;
+  if(d.act==='close'){ if(ev.target===el || el.tagName==='BUTTON') $('#sheet').innerHTML=''; return; }
+  if(d.act==='guide'){ guide(); return; }
+  if(d.recipe){ sheet(R.find(r=>r.id===d.recipe)); return; }
+  if(d.quick){ const q = QUICK[+d.quick]; S.log.push({d:today(),ts:Date.now(),...q}); toast(`记下了：${q.n}，+${q.p}g 蛋白`); }
+  if(d.del){ S.log = S.log.filter(x => String(x.ts)!==d.del); }
+  if(d.tag) S.tag = d.tag;
+  if(d.sort) S.sort = d.sort;
+  if(d.buy){ buy(d.buy); toast(`${ING[d.buy].n}：记了一次购买`); }
+  if(d.out){ S.pantry[d.out].st = 'out'; toast(`${ING[d.out].n} 加进购物清单了`); }
+  if(d.add){ buy(d.add); toast(`${ING[d.add].n} 放进冰箱了`); }
+  if(d.extra){ S.extra.push(d.extra); }
+  if(d.unextra){ S.extra = S.extra.filter(x=>x!==d.unextra); }
+  if(d.eat){ const r = R.find(x=>x.id===d.eat); S.log.push({d:today(),ts:Date.now(),n:r.n,k:r.k,p:r.p,c:r.c,f:r.f}); $('#sheet').innerHTML=''; toast(`记下了：${r.n}，+${r.p}g 蛋白`); tab='today'; location.hash='today'; }
+  if(d.needshop){ const r = R.find(x=>x.id===d.needshop); missing(r).forEach(i => { if(!S.extra.includes(i)) S.extra.push(i); }); $('#sheet').innerHTML=''; toast(`加了 ${missing(r).length} 样到购物清单`); }
+  if(d.act==='bought'){ const ids = Object.keys(S.checked).filter(k=>S.checked[k]); ids.forEach(buy); toast(`${ids.length} 样已放进冰箱`); }
+  if(d.act==='copy'){ const txt = '购物清单\n' + shopList().map(x=>`- ${ING[x.id].n}`).join('\n'); const ok = () => toast('已复制'); try { navigator.clipboard.writeText(txt).then(ok, ()=>toast('复制失败，请手动选择文字')); } catch(e){ toast('复制失败，请手动选择文字'); } return; }
+  if(d.act==='nextprep') S.prepPick++;
+  if(d.act==='prepshop'){ const c = prepCombos()[S.prepPick % prepCombos().length]; c.miss.forEach(i => { if(!S.extra.includes(i)) S.extra.push(i); }); toast(`加了 ${c.miss.length} 样到购物清单`); }
+  if(d.act==='mine'){ S = emptyState(); tab='me'; location.hash='me'; toast('示例数据已清空，填一下你的信息'); }
+  if(d.act==='demo'){ S = demoState(); tab='today'; location.hash='today'; toast('已载入示例数据'); }
+  if(d.act==='reset'){
+    if(!resetArmed){ resetArmed = true; el.textContent = '再点一次确认清空'; setTimeout(()=>{ resetArmed=false; const b=$('#resetBtn'); if(b) b.textContent='清空所有数据'; }, 3000); return; }
+    resetArmed = false; S = emptyState(); toast('已清空');
+  }
+  save(); render();
+});
+document.addEventListener('change', ev => {
+  const el = ev.target;
+  if(el.id==='trainToggle'){ S.train[today()] = el.checked; }
+  else if(el.id==='onlyNow'){ S.onlyNow = el.checked; }
+  else if(el.dataset.check){ S.checked[el.dataset.check] = el.checked; }
+  else return;
+  save(); render();
+});
+document.addEventListener('submit', ev => {
+  if(ev.target.id!=='pf') return;
+  ev.preventDefault();
+  const f = new FormData(ev.target);
+  const first = !S.profile;
+  S.profile = {sex:f.get('sex'), age:+f.get('age'), h:+f.get('h'), w:+f.get('w'), goal:f.get('goal'), days:+f.get('days'), time:f.get('time'), gear:f.getAll('gear'), avoid:f.getAll('avoid')};
+  save(); toast(first ? '目标算好了，接下来去冰箱里加点食材' : '已保存，目标已更新');
+  if(first){ tab='pantry'; location.hash='pantry'; }
+  render(); window.scrollTo(0,0);
+});
+document.addEventListener('keydown', ev => { if(ev.key==='Escape') $('#sheet').innerHTML=''; });
+function fromHash(){ const h = location.hash.slice(1); if(TABS.some(t=>t[0]===h)) tab = h; render(); window.scrollTo(0,0); }
+window.addEventListener('hashchange', fromHash);
+fromHash();
+</script>
+</body><!--local-->
+</html><!--local-->
