@@ -1,4 +1,4 @@
-# 练后吃啥
+# workAQout（练后吃啥）
 
 **👉 立即试用：https://aqjc19.github.io/AQ_stuff/fuel/** （手机打开后「添加到主屏幕」就像 App 一样）
 
@@ -16,7 +16,7 @@
 
 ## 和现有 App 有什么不一样
 
-| | 一般的菜谱 App | 一般的记账/购物清单 App | 练后吃啥 |
+| | 一般的菜谱 App | 一般的记账/购物清单 App | workAQout |
 | --- | --- | --- | --- |
 | 按冰箱现有食材推荐 | 部分 | ✗ | ✓ 还会告诉你「只差一样」 |
 | 按训练时间推荐练前/练后餐 | ✗ | ✗ | ✓ |
@@ -31,8 +31,25 @@
 
 不需要安装任何东西。
 
-- **电脑**：下载这个文件夹，双击 `index.html`，用 Chrome / Safari / Edge 打开就行。
-- **手机**：把 `index.html` 放到任何静态网页托管上（比如 GitHub Pages，见下面），用手机浏览器打开，然后「添加到主屏幕」，就像一个 App。
+- **手机 / 电脑**：直接打开 https://aqjc19.github.io/AQ_stuff/fuel/
+- **离线用**：下载这个文件夹，双击 `index.html`，用 Chrome / Safari / Edge 打开就行。
+
+### 添加到手机主屏幕
+
+加好之后桌面上会有一个 workAQout 图标（哑铃 + 饭碗），点开是全屏的，没有浏览器地址栏，用起来和 App 一样。
+
+**iPhone（必须用 Safari）**
+1. 用 Safari 打开上面的网址（在微信里打开的话，点右上角「···」→「在默认浏览器中打开」）。
+2. 点底部中间的**分享**按钮（方框 + 向上箭头）。
+3. 往下滑，点「**添加到主屏幕**」→ 右上角「**添加**」。
+
+**安卓（Chrome）**
+1. 用 Chrome 打开网址。
+2. 点右上角 **⋮** →「**添加到主屏幕**」或「**安装应用**」→「添加」。
+
+**电脑（Chrome / Edge）**：地址栏右边会出现一个「安装」图标，点它就会变成一个独立窗口的 App。
+
+> 之前已经加过旧图标的：先在桌面上长按删除旧的，再按上面的步骤重新添加一次，就会换成新图标。
 - **用 GitHub Pages 发布**：在仓库的 Settings → Pages 里，Source 选 `main` 分支、根目录，保存。几分钟后就能通过
   `https://aqjc19.github.io/AQ_stuff/fuel/` 访问。注意仓库需要是 Public（或者你有 GitHub Pro）。
 
@@ -120,8 +137,10 @@ App 右上角的「使用指南」按钮里也有这一份。
 
 ```
 fuel/
-├── index.html   整个 App（HTML + CSS + JS 一个文件，无依赖）
-└── README.md    这份说明
+├── index.html             整个 App（HTML + CSS + JS 一个文件，无依赖）
+├── manifest.webmanifest   App 名字、图标、全屏模式（添加到主屏幕用）
+├── icons/                 App 图标（icon.svg 是源文件）
+└── README.md              这份说明
 ```
 
 想加自己的菜：在 `index.html` 里找到 `const R = [`，照着格式加一行即可（`need` 写主要食材的 id，`g` 写需要的厨具）。

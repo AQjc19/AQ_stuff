@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#1d6a4e"/>
+  <!-- steam -->
+  <path d="M206 120c-14 18 14 34 0 52M256 104c-14 18 14 34 0 52M306 120c-14 18 14 34 0 52" fill="none" stroke="#cfe6d9" stroke-width="16" stroke-linecap="round"/>
+  <!-- dumbbell -->
+  <rect x="150" y="214" width="212" height="20" rx="10" fill="#ffffff"/>
+  <rect x="118" y="186" width="34" height="76" rx="12" fill="#ffffff"/>
+  <rect x="360" y="186" width="34" height="76" rx="12" fill="#ffffff"/>
+  <rect x="90" y="200" width="26" height="48" rx="10" fill="#ffffff"/>
+  <rect x="396" y="200" width="26" height="48" rx="10" fill="#ffffff"/>
+  <!-- bowl -->
+  <path d="M96 280h320c0 92-72 148-160 148S96 372 96 280z" fill="#e3a21f"/>
+  <rect x="200" y="420" width="112" height="22" rx="11" fill="#e3a21f"/>
+</svg>

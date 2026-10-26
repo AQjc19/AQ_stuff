@@ -1,0 +1,16 @@
+{
+  "name": "workAQout",
+  "short_name": "workAQout",
+  "description": "给爱健身、不太会做饭的学生：按冰箱里的食材推荐高蛋白快手菜，预测什么快吃完了。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eef1ec",
+  "theme_color": "#1d6a4e",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
