@@ -180,6 +180,10 @@ h3 { font-size: 15px; margin: 0; font-weight: 700; }
 .calc div { background: var(--sunk); border-radius: 10px; padding: 8px 10px; }
 .calc b { display: block; font-family: var(--display); font-weight: 400; font-size: 24px; line-height: 1.1; }
 .calc span { font-size: 11.5px; color: var(--muted); }
+.dislike { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; gap: 10px; background: var(--surface); }
+.dislike summary { cursor: pointer; font-size: 13.5px; font-weight: 500; }
+.dislike[open] summary { margin-bottom: 6px; }
+a.btn { text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
 .why { font-size: 12.5px; color: var(--muted); margin: 0; }
 
 /* Prep */
@@ -245,12 +249,14 @@ const ING = {
 };
 const CATS = ['蛋白','奶类','主食','果蔬','调料'];
 const GEAR = {micro:'微波炉', stove:'灶台/电磁炉', airfryer:'空气炸锅', ricecooker:'电饭煲'};
-const AVOID = {
-  veg:{n:'素食', ids:['chicken','readychicken','beef','tuna','shrimp','basa']},
-  nobeef:{n:'不吃牛肉', ids:['beef']},
-  nosea:{n:'不吃海鲜', ids:['tuna','shrimp','basa']},
-  nodairy:{n:'乳糖不耐', ids:['milk','yogurt','cheese']}
+// allergies are strict: they also rule out staples such as soy sauce
+const ALLERGY = {
+  egg:{n:'鸡蛋', ids:['egg']}, sea:{n:'海鲜/鱼', ids:['tuna','shrimp','basa']}, peanut:{n:'花生', ids:['pb']},
+  soy:{n:'大豆', ids:['tofu','edamame','soy']}, gluten:{n:'小麦/麸质', ids:['bread','noodle','tortilla','soy']},
+  dairy:{n:'乳制品', ids:['milk','yogurt','cheese','whey']}
 };
+const MEAT = ['chicken','readychicken','beef','tuna','shrimp','basa'];
+const FLAVOR = {spicy:'辣', sour:'酸', sweet:'甜'};
 // t = total minutes, a = hands-on minutes, w = dishes to wash, lv = difficulty 1-3
 const R = [
   {id:'r1',n:'番茄炒蛋盖饭',g:['stove'],t:15,a:12,w:2,lv:1,k:640,p:26,c:88,f:20,need:['egg','tomato','rice'],st:['oil'],tags:['正餐'],
@@ -310,6 +316,14 @@ const R = [
   {id:'r28',n:'虾仁番茄意面',g:['stove'],t:18,a:12,w:1,lv:2,k:580,p:34,c:88,f:10,need:['shrimp','tomato','noodle'],st:['oil','garlic'],tags:['正餐','练后'],
    s:['意面按包装时间煮好，留半碗面汤','蒜末和番茄块炒出汁','放虾仁炒到变色','倒入意面和面汤拌匀，加盐']}
 ];
+const FL = {r18:['spicy'], r1:['sour'], r6:['sour'], r10:['sour'], r21:['sour'], r26:['sour'], r28:['sour'], r4:['sweet'], r12:['sweet'], r20:['sweet'], r25:['sweet']};
+const KW = {r27:'白煮蛋', r3:'隔夜燕麦', r13:'鸡胸肉卷饼', r14:'鸡胸肉沙拉', r7:'电饭煲鸡胸肉焖饭', r26:'电饭煲番茄饭'};
+R.forEach(r => { r.fl = FL[r.id] || []; r.kw = (KW[r.id] || r.n) + ' 做法'; });
+const TUTORIAL = [
+  ['小红书', q => 'https://www.xiaohongshu.com/search_result?keyword=' + encodeURIComponent(q)],
+  ['B站', q => 'https://search.bilibili.com/all?keyword=' + encodeURIComponent(q)],
+  ['下厨房', q => 'https://www.xiachufang.com/search/?keyword=' + encodeURIComponent(q)]
+];
 const QUICK = [
   {n:'蛋白粉一勺',k:120,p:24,c:3,f:1},{n:'鸡蛋 1 个',k:72,p:6,c:0,f:5},{n:'牛奶 250ml',k:150,p:8,c:12,f:8},
   {n:'希腊酸奶 1 盒',k:130,p:15,c:8,f:4},{n:'即食鸡胸 1 袋',k:110,p:22,c:2,f:2},{n:'米饭 1 碗',k:230,p:4,c:50,f:1}
@@ -333,7 +347,7 @@ function demoState(){
   const at = (h,m) => { const d = new Date(); d.setHours(h,m,0,0); return d.getTime(); };
   return {
     demo:true,
-    profile:{sex:'m',age:21,h:178,w:75,goal:'bulk',days:5,time:'18:00',gear:['micro','stove','airfryer','ricecooker'],avoid:[]},
+    profile:{sex:'m',age:21,h:178,w:75,goal:'bulk',days:5,time:'18:00',gear:['micro','stove','airfryer','ricecooker'],diet:'all',allergy:[],dislike:[],flavor:[]},
     pantry:{
       egg:{st:'have',b:B(20,14,8,2)}, chicken:{st:'have',b:B(11,6)}, readychicken:{st:'have',b:B(3)},
       beef:{st:'out',b:B(9)}, tuna:{st:'have',b:B(10)}, shrimp:{st:'have',b:B(12)}, tofu:{st:'have',b:B(2)},
@@ -353,6 +367,14 @@ function emptyState(){
 }
 let S;
 try { S = JSON.parse(localStorage.getItem(KEY)) || demoState(); } catch(e) { S = demoState(); }
+if(S.profile && S.profile.avoid){
+  const a = S.profile.avoid, dis = [];
+  if(a.includes('nobeef')) dis.push('beef');
+  if(a.includes('nosea')) dis.push('tuna','shrimp','basa');
+  if(a.includes('nodairy')) dis.push('milk','yogurt','cheese');
+  Object.assign(S.profile, {diet:a.includes('veg')?'veg':'all', allergy:[], dislike:dis, flavor:[]});
+  delete S.profile.avoid;
+}
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
 
 // ---------- logic ----------
@@ -370,7 +392,14 @@ function targets(p){
   const bmi = p.w/((p.h/100)**2);
   return {bmr:Math.round(bmr), fac, tdee:Math.round(tdee), kcal, p:pr, f:fat, c:carb, ppk, bmi};
 }
-function avoided(){ const s = new Set(); (S.profile?.avoid||[]).forEach(a => AVOID[a].ids.forEach(i => s.add(i))); return s; }
+function diet(){
+  const p = S.profile || {};
+  const hard = new Set(), soft = new Set(p.dislike || []);
+  (p.allergy || []).forEach(a => ALLERGY[a].ids.forEach(i => hard.add(i)));
+  if(p.diet==='veg') MEAT.forEach(i => hard.add(i));
+  return {hard, soft, flavor: p.flavor || []};
+}
+const blocked = id => { const d = diet(); return d.hard.has(id) || d.soft.has(id); };
 // how often this person rebuys an item: mean gap between purchases, else the default
 function interval(id){
   const b = (S.pantry[id]?.b||[]).slice().sort();
@@ -393,7 +422,10 @@ const available = id => { const s = pstat(id).st; return s==='have' || s==='low'
 function recipeOk(r){
   const gear = S.profile?.gear || Object.keys(GEAR);
   if(!r.g.every(g => gear.includes(g))) return false;
-  const av = avoided(); return !r.need.some(i => av.has(i));
+  const d = diet();
+  if(r.need.some(i => d.hard.has(i) || d.soft.has(i))) return false;
+  if(r.st.some(i => d.hard.has(i))) return false;   // disliked staples can just be left out
+  return !r.fl.some(f => d.flavor.includes(f));
 }
 const missing = r => r.need.filter(i => !available(i));
 function todayLog(){ return S.log.filter(e => e.d===today()); }
@@ -562,7 +594,7 @@ function vCook(){
 
 function vPantry(){
   const ids = Object.keys(S.pantry);
-  const rest = Object.keys(ING).filter(i => !S.pantry[i]);
+  const rest = Object.keys(ING).filter(i => !S.pantry[i] && !blocked(i));
   const lows = ids.filter(i => pstat(i).st==='low').length;
   return `
   <div><h2>冰箱</h2><p class="sub">买东西时点「买了」。记录越多，它越懂你多久吃完一样东西。${lows?` 现在有 <b>${lows}</b> 样预计快没了。`:''}</p></div>
@@ -585,7 +617,7 @@ function vPantry(){
 function vShop(){
   const L = shopList();
   const chk = L.filter(x => S.checked[x.id]).length;
-  const rest = Object.keys(ING).filter(i => !L.some(x => x.id===i));
+  const rest = Object.keys(ING).filter(i => !L.some(x => x.id===i) && !blocked(i));
   return `
   <div><h2>购物清单</h2><p class="sub">自动生成：吃完的、按你的习惯快吃完的，加上你做菜缺的。</p></div>
   <section class="card">
@@ -620,7 +652,8 @@ function vPrep(){
 }
 
 function vMe(){
-  const p = S.profile || {sex:'m',age:20,h:175,w:70,goal:'maintain',days:3,time:'18:00',gear:['micro','stove'],avoid:[]};
+  const p = S.profile || {sex:'m',age:20,h:175,w:70,goal:'maintain',days:3,time:'18:00',gear:['micro','stove'],diet:'all',allergy:[],dislike:[],flavor:[]};
+  const dis = p.dislike || [];
   const t = targets(S.profile);
   const goalTxt = {cut:'减脂：热量比消耗少 20%，蛋白 2.2g/kg 保肌肉', maintain:'维持：热量等于消耗，蛋白 1.8g/kg', bulk:'增肌：热量多 10%，蛋白 2.0g/kg'};
   return `
@@ -639,7 +672,13 @@ function vMe(){
       <div class="field"><label for="days">每周训练几次</label><select id="days" name="days">${[0,1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${p.days==n?'selected':''}>${n} 次</option>`).join('')}</select></div>
       <div class="field"><label for="time">一般几点练</label><input id="time" name="time" type="time" value="${p.time||''}"></div>
       <div class="field full"><span class="label">家里有的厨具（没勾的菜会被隐藏）</span><div class="checks">${Object.entries(GEAR).map(([k,l])=>`<label><input type="checkbox" name="gear" value="${k}" ${p.gear.includes(k)?'checked':''}>${l}</label>`).join('')}</div></div>
-      <div class="field full"><span class="label">忌口</span><div class="checks">${Object.entries(AVOID).map(([k,a])=>`<label><input type="checkbox" name="avoid" value="${k}" ${p.avoid.includes(k)?'checked':''}>${a.n}</label>`).join('')}</div></div>
+      <div class="field full"><span class="label">饮食习惯</span><div class="checks"><label><input type="radio" name="diet" value="all" ${p.diet!=='veg'?'checked':''}>什么都吃</label><label><input type="radio" name="diet" value="veg" ${p.diet==='veg'?'checked':''}>素食（吃蛋奶）</label></div></div>
+      <div class="field full"><span class="label">过敏（严格排除，连酱油这类调料也算）</span><div class="checks">${Object.entries(ALLERGY).map(([k,a])=>`<label><input type="checkbox" name="allergy" value="${k}" ${(p.allergy||[]).includes(k)?'checked':''}>${a.n}</label>`).join('')}</div></div>
+      <div class="field full"><span class="label">不喜欢的口味</span><div class="checks">${Object.entries(FLAVOR).map(([k,l])=>`<label><input type="checkbox" name="flavor" value="${k}" ${(p.flavor||[]).includes(k)?'checked':''}>不吃${l}</label>`).join('')}</div></div>
+      <details class="field full dislike" ${dis.length?'open':''}><summary>不吃的食材${dis.length?`（已选 ${dis.length} 样）`:'（点开选择）'}</summary>
+        ${CATS.map(c => `<div class="stack" style="gap:4px"><span class="label">${c}</span><div class="checks">${Object.keys(ING).filter(i=>ING[i].c===c).map(i=>`<label><input type="checkbox" name="dislike" value="${i}" ${dis.includes(i)?'checked':''}>${ING[i].n}</label>`).join('')}</div></div>`).join('')}
+        <span class="note">调料（比如蒜）选了不吃，菜照样推荐，做的时候不放就行。</span>
+      </details>
     </div>
     <button class="btn primary" type="submit" style="align-self:flex-start">${S.profile?'保存并重新计算':'算出我的目标'}</button>
   </form>
@@ -651,14 +690,19 @@ function vMe(){
 function sheet(r){
   const m = missing(r);
   const pct = S.profile ? Math.round(r.p/targets(S.profile).p*100) : 0;
+  const skip = r.st.filter(i => diet().soft.has(i));
   $('#sheet').innerHTML = `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-modal="true" aria-label="${r.n}">
     <div class="row between"><h2 style="margin:0">${r.n}</h2><button class="x" data-act="close" aria-label="关闭">×</button></div>
-    <div class="row">${r.tags.map(t=>`<span class="chip">${t}</span>`).join('')}<span class="chip">难度 <span class="lv">${'●'.repeat(r.lv)}${'○'.repeat(3-r.lv)}</span></span><span class="chip">动手 ${r.a} 分 / 共 ${r.t} 分</span></div>
+    <div class="row">${r.tags.map(t=>`<span class="chip">${t}</span>`).join('')}${r.fl.map(f=>`<span class="chip low">偏${FLAVOR[f]}</span>`).join('')}<span class="chip">难度 <span class="lv">${'●'.repeat(r.lv)}${'○'.repeat(3-r.lv)}</span></span><span class="chip">动手 ${r.a} 分 / 共 ${r.t} 分</span></div>
     <div class="macros"><div><b>${r.p}</b><span>g 蛋白</span></div><div><b>${r.k}</b><span>kcal</span></div><div><b>${r.c}</b><span>g 碳水</span></div><div><b>${r.f}</b><span>g 脂肪</span></div></div>
     ${pct?`<p class="note" style="margin:0">这一份是你今天蛋白目标的 ${pct}%。</p>`:''}
-    <div class="stack" style="gap:6px"><span class="label">食材</span><div class="ings">${r.need.map(i=>`<span class="chip ${available(i)?'ok':'out'}">${available(i)?'✓':'✗'} ${ING[i].n}</span>`).join('')}${r.st.map(i=>`<span class="chip">${ING[i].n}</span>`).join('')}</div>
+    <div class="stack" style="gap:6px"><span class="label">食材</span><div class="ings">${r.need.map(i=>`<span class="chip ${available(i)?'ok':'out'}">${available(i)?'✓':'✗'} ${ING[i].n}</span>`).join('')}${r.st.filter(i=>!skip.includes(i)).map(i=>`<span class="chip">${ING[i].n}</span>`).join('')}</div>
+    ${skip.length?`<span class="note">按你的忌口不放：${skip.map(i=>ING[i].n).join('、')}，不影响做法。</span>`:''}
     <span class="note">厨具：${r.g.length?r.g.map(g=>GEAR[g]).join('、'):'不需要开火'} · ${r.w===0?'不用洗碗':`要洗 ${r.w} 个锅碗`}</span></div>
     <div class="stack" style="gap:6px"><span class="label">步骤</span><ol class="steps">${r.s.map(x=>`<li>${x}</li>`).join('')}</ol></div>
+    <div class="stack" style="gap:6px"><span class="label">看视频教程</span>
+      <div class="row">${TUTORIAL.map(([n,u])=>`<a class="btn small" href="${u(r.kw)}" target="_blank" rel="noopener noreferrer">${n} ↗</a>`).join('')}</div>
+      <span class="note">在新窗口搜索「${esc(r.kw)}」，第一次做可以先看看别人的手法。</span></div>
     <div class="row"><button class="btn primary" data-eat="${r.id}">吃了这个</button>${m.length?`<button class="btn" data-needshop="${r.id}">缺的 ${m.length} 样加入购物清单</button>`:''}</div>
   </div></div>`;
 }
@@ -668,10 +712,11 @@ function guide(){
     <div class="row between"><h2 style="margin:0">使用指南</h2><button class="x" data-act="close" aria-label="关闭">×</button></div>
     <p class="sub">第一次用大概 3 分钟就能设置好。之后每天只需要点几下。</p>
     <ol class="guide">
-      <li><b>填身体档案</b>（我的）：身高、体重、年龄、目标、每周练几次、几点练、家里有什么厨具、忌口。它会算出你每天要吃多少热量和蛋白质。</li>
+      <li><b>填身体档案</b>（我的）：身高、体重、年龄、目标、每周练几次、几点练、家里有什么厨具，以及过敏、不吃的食材和口味。它会算出你每天要吃多少热量和蛋白质。</li>
       <li><b>把冰箱里的东西加进去</b>（冰箱）：点「+ 鸡蛋」这样的按钮。以后每次买东西就点「买了」，吃光了就点「吃完了」。</li>
-      <li><b>看能做什么</b>（能做啥）：只推荐你现在食材够、厨具能做的菜。可以按蛋白最多、动手最少、洗碗最少来排。点开一道菜能看步骤。</li>
+      <li><b>看能做什么</b>（能做啥）：只推荐你现在食材够、厨具能做的菜。可以按蛋白最多、动手最少、洗碗最少来排。点开一道菜能看步骤，还能一键跳到小红书 / B站 / 下厨房看视频教程。</li>
       <li><b>记录吃了什么</b>（今天）：做完菜点「吃了这个」，或者用「+ 蛋白粉一勺」这类快捷按钮。圆环显示今天蛋白吃够没有。</li>
+      <li><b>忌口</b>（我的）：过敏的食材连调料也会排除；「不吃的食材」可以任选；不喜欢辣、酸、甜也能勾。不合口味的菜和食材会直接被隐藏。</li>
       <li><b>训练日</b>：打开「今天要练」，练前 3 小时内会推荐好消化的练前餐，练完 2 小时内会推荐高蛋白练后餐。</li>
       <li><b>去超市前</b>（购物）：清单自动列出吃完的和「按你的习惯快吃完」的东西。买完勾上，点「勾选的都买好了」，冰箱自动更新。</li>
       <li><b>周日备餐</b>（备餐）：给你 3 道共用食材的菜，各做 2 份，管工作日 6 顿。不喜欢就点「换一组」。</li>
@@ -728,7 +773,7 @@ document.addEventListener('submit', ev => {
   ev.preventDefault();
   const f = new FormData(ev.target);
   const first = !S.profile;
-  S.profile = {sex:f.get('sex'), age:+f.get('age'), h:+f.get('h'), w:+f.get('w'), goal:f.get('goal'), days:+f.get('days'), time:f.get('time'), gear:f.getAll('gear'), avoid:f.getAll('avoid')};
+  S.profile = {sex:f.get('sex'), age:+f.get('age'), h:+f.get('h'), w:+f.get('w'), goal:f.get('goal'), days:+f.get('days'), time:f.get('time'), gear:f.getAll('gear'), diet:f.get('diet')||'all', allergy:f.getAll('allergy'), dislike:f.getAll('dislike'), flavor:f.getAll('flavor')};
   save(); toast(first ? '目标算好了，接下来去冰箱里加点食材' : '已保存，目标已更新');
   if(first){ tab='pantry'; location.hash='pantry'; }
   render(); window.scrollTo(0,0);
